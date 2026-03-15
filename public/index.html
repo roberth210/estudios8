@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Escuela Matemática VIP</title>
+<script src="/socket.io/socket.io.js"></script>
+
+<style>
+*{
+box-sizing:border-box;
+}
+
+body{
+margin:0;
+font-family:Arial, sans-serif;
+background:
+radial-gradient(circle at top,#1a4dff22 0%,transparent 30%),
+radial-gradient(circle at bottom,#00c3ff22 0%,transparent 35%),
+linear-gradient(135deg,#020b1f,#071b47,#0a2f75,#0b46b0);
+background-size:cover;
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+overflow:hidden;
+}
+
+body::before{
+content:"";
+position:fixed;
+inset:0;
+background:
+linear-gradient(120deg,transparent 0%,rgba(255,255,255,.03) 45%,transparent 55%),
+linear-gradient(0deg,rgba(255,255,255,.02),rgba(255,255,255,.02));
+pointer-events:none;
+}
+
+.panel{
+background:linear-gradient(180deg,rgba(255,255,255,0.10),rgba(255,255,255,0.04));
+backdrop-filter:blur(18px);
+-webkit-backdrop-filter:blur(18px);
+padding:34px 28px 26px;
+border-radius:28px;
+box-shadow:
+0 20px 60px rgba(0,0,0,0.45),
+0 0 30px rgba(0,174,255,0.25),
+inset 0 1px 0 rgba(255,255,255,0.15);
+text-align:center;
+width:min(92vw,430px);
+position:relative;
+border:1px solid rgba(255,255,255,0.12);
+overflow:hidden;
+}
+
+.panel::after{
+content:"VIP";
+position:absolute;
+top:14px;
+left:18px;
+font-size:11px;
+letter-spacing:3px;
+padding:6px 10px;
+border-radius:999px;
+background:linear-gradient(90deg,#ffd700,#ffb300);
+color:#111;
+font-weight:900;
+box-shadow:0 0 18px rgba(255,215,0,.35);
+}
+
+h2,h3{
+margin:0 0 14px;
+}
+
+#login h2{
+font-size:28px;
+margin-bottom:22px;
+text-shadow:0 0 10px rgba(0,170,255,.35);
+}
+
+input{
+width:88%;
+padding:14px 16px;
+border-radius:14px;
+border:1px solid rgba(255,255,255,.10);
+margin:7px 0;
+outline:none;
+background:rgba(255,255,255,.09);
+color:white;
+font-size:15px;
+box-shadow:inset 0 0 10px rgba(255,255,255,.03);
+}
+
+input::placeholder{
+color:rgba(255,255,255,.65);
+}
+
+button{
+padding:13px 22px;
+border:none;
+border-radius:14px;
+background:linear-gradient(135deg,#009dff,#00d0ff);
+color:white;
+cursor:pointer;
+font-weight:700;
+letter-spacing:.4px;
+transition:.25s;
+box-shadow:0 10px 25px rgba(0,170,255,.25);
+}
+
+button:hover{
+transform:translateY(-2px) scale(1.02);
+box-shadow:0 12px 28px rgba(0,170,255,.38);
+}
+
+#player{
+margin-top:4px;
+font-size:20px;
+letter-spacing:.5px;
+text-shadow:0 0 10px rgba(255,255,255,.18);
+}
+
+#points{
+position:absolute;
+top:18px;
+right:18px;
+min-width:68px;
+font-size:18px;
+padding:10px 14px;
+border-radius:14px;
+background:linear-gradient(135deg,#0a1022,#10192f);
+border:1px solid rgba(255,255,255,.08);
+box-shadow:
+0 8px 20px rgba(0,0,0,.25),
+inset 0 0 12px rgba(255,255,255,.04);
+transition:.3s;
+font-weight:bold;
+}
+
+.positive{
+color:#00ff9d;
+box-shadow:
+0 0 18px rgba(0,255,157,.25),
+0 8px 20px rgba(0,0,0,.25);
+}
+
+.negative{
+color:#ff5d5d;
+box-shadow:
+0 0 18px rgba(255,60,60,.25),
+0 8px 20px rgba(0,0,0,.25);
+}
+
+.timerWrap{
+display:flex;
+justify-content:center;
+align-items:center;
+margin:8px 0 16px;
+}
+
+#timerBox{
+position:relative;
+width:108px;
+height:108px;
+border-radius:50%;
+display:flex;
+justify-content:center;
+align-items:center;
+background:
+radial-gradient(circle at 30% 30%,rgba(255,255,255,.16),rgba(255,255,255,.04) 55%,rgba(0,0,0,.14)),
+linear-gradient(145deg,#07142f,#0d224e);
+border:1px solid rgba(255,255,255,.10);
+box-shadow:
+0 0 25px rgba(0,174,255,.18),
+inset 0 0 18px rgba(255,255,255,.05),
+0 10px 24px rgba(0,0,0,.35);
+}
+
+#timerBox::before{
+content:"TIEMPO";
+position:absolute;
+top:20px;
+font-size:10px;
+letter-spacing:2px;
+color:rgba(255,255,255,.70);
+}
+
+#timer{
+font-size:32px;
+font-weight:900;
+margin-top:8px;
+text-shadow:0 0 14px rgba(0,200,255,.4);
+}
+
+#timerBarWrap{
+margin:10px auto 2px;
+width:82%;
+height:8px;
+border-radius:999px;
+background:rgba(255,255,255,.08);
+overflow:hidden;
+box-shadow:inset 0 0 8px rgba(0,0,0,.25);
+}
+
+#timerBar{
+height:100%;
+width:100%;
+border-radius:999px;
+background:linear-gradient(90deg,#00ffa2,#00d9ff,#3f8cff);
+transition:width 1s linear, filter .25s;
+}
+
+.danger{
+color:#ff6b6b !important;
+text-shadow:0 0 14px rgba(255,60,60,.45) !important;
+}
+
+.dangerBar{
+background:linear-gradient(90deg,#ff4d4d,#ff8a00) !important;
+filter:drop-shadow(0 0 8px rgba(255,90,90,.45));
+}
+
+#question{
+font-size:40px;
+margin:18px 0 14px;
+padding:22px 16px;
+border-radius:22px;
+background:
+linear-gradient(145deg,rgba(0,28,79,.95),rgba(0,68,152,.72));
+box-shadow:
+0 0 24px rgba(0,140,255,0.35),
+inset 0 0 18px rgba(0,200,255,0.14),
+0 16px 30px rgba(0,0,0,.22);
+font-weight:900;
+letter-spacing:1px;
+border:1px solid rgba(255,255,255,.10);
+}
+
+#options{
+margin-top:18px;
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:12px;
+}
+
+.opt{
+padding:16px;
+font-size:22px;
+border-radius:16px;
+border:1px solid rgba(255,255,255,.10);
+cursor:pointer;
+background:linear-gradient(145deg,#0b7bff,#00c7ff);
+color:white;
+transition:.22s;
+font-weight:800;
+box-shadow:
+0 10px 25px rgba(0,126,255,.25),
+inset 0 0 8px rgba(255,255,255,.10);
+}
+
+.opt:hover{
+transform:translateY(-2px) scale(1.03);
+box-shadow:0 0 18px rgba(0,174,255,.45);
+}
+
+.opt.correct{
+background:linear-gradient(145deg,#00b85c,#00ff9d) !important;
+box-shadow:0 0 20px rgba(0,255,157,.45) !important;
+transform:scale(1.03);
+}
+
+.opt.wrong{
+background:linear-gradient(145deg,#ff3d3d,#ff7b7b) !important;
+box-shadow:0 0 20px rgba(255,80,80,.45) !important;
+transform:scale(1.03);
+}
+
+.top{
+margin-top:22px;
+background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.03));
+padding:14px;
+border-radius:18px;
+border:1px solid rgba(255,255,255,.08);
+box-shadow:inset 0 0 10px rgba(255,255,255,.03);
+}
+
+.top h3{
+margin-bottom:10px;
+font-size:20px;
+}
+
+.rankItem{
+margin:8px 0;
+font-size:16px;
+padding:8px 10px;
+border-radius:12px;
+background:rgba(255,255,255,.04);
+}
+
+.rankName{
+font-weight:bold;
+}
+
+.gold{ color:#ffd700; }
+.orange{ color:#ff9d00; }
+.green{ color:#00ff88; }
+
+#statusMsg{
+margin-top:10px;
+font-size:13px;
+color:rgba(255,255,255,.75);
+min-height:18px;
+}
+
+@media (max-width:480px){
+.panel{
+padding:28px 18px 20px;
+width:94vw;
+max-height:96vh;
+overflow-y:auto;
+}
+#question{
+font-size:32px;
+}
+.opt{
+font-size:20px;
+padding:14px;
+}
+#timerBox{
+width:95px;
+height:95px;
+}
+#timer{
+font-size:28px;
+}
+}
+</style>
+</head>
+<body>
+
+<div class="panel">
+
+<div id="login">
+<h2>Acceso al juego</h2>
+<input id="user" placeholder="usuario"><br>
+<input id="pass" type="password" placeholder="contraseña"><br>
+<button onclick="login()">Entrar</button>
+</div>
+
+<div id="game" style="display:none">
+<h3 id="player"></h3>
+<div id="points">0</div>
+
+<div class="timerWrap">
+<div>
+<div id="timerBox">
+<div id="timer">10</div>
+</div>
+<div id="timerBarWrap">
+<div id="timerBar"></div>
+</div>
+</div>
+</div>
+
+<div id="question"></div>
+<div id="options"></div>
+<div id="statusMsg"></div>
+
+<div class="top">
+<h3>TOP 5</h3>
+<div id="ranking"></div>
+</div>
+</div>
+
+</div>
+
+<script>
+const socket = io()
+
+let username = ""
+let points = 0
+let a, b, op
+
+let timeLeft = 10
+let totalTime = 10
+let timerInterval = null
+let answering = false
+
+function playTone(type){
+  try{
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext
+    const ctx = new AudioContextClass()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+
+    if(type === "ok"){
+      osc.frequency.value = 760
+    }else{
+      osc.frequency.value = 220
+    }
+
+    gain.gain.setValueAtTime(0.001, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.01)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.20)
+
+    osc.start()
+    osc.stop(ctx.currentTime + 0.22)
+  }catch(e){}
+}
+
+function login(){
+fetch("/login",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+user:document.getElementById("user").value,
+pass:document.getElementById("pass").value
+})
+})
+.then(r=>r.json())
+.then(d=>{
+if(d.ok){
+username = document.getElementById("user").value
+points = d.points || 0
+update()
+
+document.getElementById("login").style.display = "none"
+document.getElementById("game").style.display = "block"
+document.getElementById("player").innerText = "Jugador: " + username
+
+newQuestion()
+}else{
+alert(d.error || "usuario incorrecto")
+}
+})
+.catch(()=>{
+alert("Error de conexión con el servidor")
+})
+}
+
+function startTimer(){
+clearInterval(timerInterval)
+timeLeft = totalTime
+renderTimer()
+
+timerInterval = setInterval(()=>{
+timeLeft--
+renderTimer()
+
+if(timeLeft <= 0){
+clearInterval(timerInterval)
+points--
+update()
+sendScore()
+document.getElementById("statusMsg").innerText = "Se acabó el tiempo, perdiste 1 punto."
+newQuestion()
+}
+},1000)
+}
+
+function renderTimer(){
+const timer = document.getElementById("timer")
+const bar = document.getElementById("timerBar")
+
+timer.innerText = timeLeft
+const percent = (timeLeft / totalTime) * 100
+bar.style.width = percent + "%"
+
+timer.classList.remove("danger")
+bar.classList.remove("dangerBar")
+
+if(timeLeft <= 3){
+timer.classList.add("danger")
+bar.classList.add("dangerBar")
+}
+}
+
+function newQuestion(){
+answering = false
+document.getElementById("statusMsg").innerText = ""
+
+a = Math.floor(Math.random()*10)
+b = Math.floor(Math.random()*10)
+
+let ops = ["+","-","*","/"]
+op = ops[Math.floor(Math.random()*ops.length)]
+
+if(op=="/"){
+b = Math.floor(Math.random()*9) + 1
+a = a * b
+}
+
+document.getElementById("question").innerText = a + " " + op + " " + b
+
+let correct = eval(a + op + b)
+
+let fake1 = correct + (Math.floor(Math.random()*3)+1)
+let fake2 = correct - (Math.floor(Math.random()*3)+1)
+let fake3 = correct + 2
+
+let options = [correct, fake1, fake2, fake3]
+
+options = [...new Set(options)]
+while(options.length < 4){
+options.push(correct + Math.floor(Math.random()*10) - 5)
+options = [...new Set(options)]
+}
+
+options = options.sort(()=>Math.random()-0.5)
+
+let html = ""
+options.forEach(o=>{
+html += `<button class="opt" onclick="choose(${o}, this)">${o}</button>`
+})
+
+document.getElementById("options").innerHTML = html
+startTimer()
+}
+
+function choose(value, btn){
+if(answering) return
+answering = true
+
+clearInterval(timerInterval)
+
+let correct = eval(a + op + b)
+const allButtons = document.querySelectorAll(".opt")
+
+allButtons.forEach(b => b.disabled = true)
+
+if(value === correct){
+points++
+document.getElementById("statusMsg").innerText = "Correcto, ganaste 1 punto."
+btn.classList.add("correct")
+playTone("ok")
+}else{
+points--
+document.getElementById("statusMsg").innerText = "Incorrecto, perdiste 1 punto."
+btn.classList.add("wrong")
+playTone("bad")
+
+allButtons.forEach(b=>{
+if(Number(b.innerText) === correct){
+b.classList.add("correct")
+}
+})
+}
+
+update()
+sendScore()
+
+setTimeout(()=>{
+newQuestion()
+}, 700)
+}
+
+function sendScore(){
+socket.emit("score",{
+user:username,
+points:points
+})
+}
+
+function update(){
+let box = document.getElementById("points")
+box.innerText = points
+box.classList.remove("positive","negative")
+
+if(points >= 0){
+box.classList.add("positive")
+}else{
+box.classList.add("negative")
+}
+}
+
+socket.on("top",(data)=>{
+let html = ""
+let medals = ["🥇","🥈","🥉","🏅","🏅"]
+
+data.forEach((p,i)=>{
+let clase = "rankName"
+let crown = ""
+
+if(i===0){
+clase = "rankName gold"
+crown = " 👑"
+}
+if(i===1){
+clase = "rankName orange"
+}
+if(i===2){
+clase = "rankName green"
+}
+
+html += `
+<div class="rankItem">
+${medals[i] || "🏅"} <span class="${clase}">${p.user}${crown}</span> : ${p.points}
+</div>
+`
+})
+
+document.getElementById("ranking").innerHTML = html
+})
+</script>
+
+</body>
+</html>
