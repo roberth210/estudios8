@@ -1,7 +1,7 @@
 {
   "name": "estudios8",
   "version": "1.0.0",
-  "description": "Servidor para index con panel",
+  "description": "Servidor juego matematico",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
